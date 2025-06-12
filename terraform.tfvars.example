@@ -1,0 +1,38 @@
+# Ejemplo de configuración de variables
+
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Project Configuration
+project_name = "mean-stack"
+environment  = "dev"
+
+# Network Configuration
+vpc_cidr                = "10.0.0.0/16"
+public_subnet_cidrs     = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs    = ["10.0.3.0/24", "10.0.4.0/24"]
+availability_zones      = ["us-east-1a", "us-east-1b"]
+
+# EC2 Configuration
+web_instance_type = "t2.micro"
+db_instance_type  = "t2.micro"
+key_pair_name     = "mean-stack-keypair"
+
+# AMI IDs (Amazon Linux 2023 - actualizar según región y fecha)
+web_ami_id = "ami-0c7217cdde317cfec"  # Cambiar por AMI específica si es necesario
+db_ami_id  = "ami-0c7217cdde317cfec"  # Cambiar por AMI específica si es necesario
+
+# Security Configuration
+allowed_ssh_cidrs = ["10.0.0.0/16"]  # Solo desde VPC por defecto
+
+# MongoDB Configuration
+enable_mongodb_auth = true
+mongodb_username    = "meanadmin"
+mongodb_password    = "SecureP@ssw0rd123!"  # CAMBIAR en producción
+
+# Advanced Configuration (opcional)
+# web_root_volume_size     = 20
+# db_root_volume_size      = 20
+# mongodb_data_volume_size = 50
+# log_retention_days       = 7
+# assign_elastic_ips       = false

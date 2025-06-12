@@ -1,0 +1,102 @@
+# .github/workflows/terraform.yml
+# GitHub Actions workflow para CI/CD del proyecto MEAN Stack
+
+name: 'Terraform MEAN Stack'
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+    environment: production
+
+    # Usar bash shell para todos los steps
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout del repositorio
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    # Instalar la versión específica de Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: "1.5.7"
+
+    # Configurar credenciales AWS usando GitHub Secrets
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    # Inicializar Terraform
+    - name: Terraform Init
+      run: terraform init
+
+    # Verificar formato de archivos Terraform
+    - name: Terraform Format
+      run: terraform fmt -check
+
+    # Validar configuración de Terraform
+    - name: Terraform Validate
+      run: terraform validate
+
+    # Generar y mostrar plan de ejecución
+    - name: Terraform Plan
+      run: terraform plan -input=false -var-file="terraform.tfvars"
+
+    # Aplicar cambios en la rama main solamente
+    - name: Terraform Apply
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: terraform apply -auto-approve -input=false -var-file="terraform.tfvars"
+
+    # Ejecutar tests de validación
+    - name: Run Validation Tests
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      run: |
+        chmod +x scripts/validate-deployment.sh
+        ./scripts/validate-deployment.sh
+
+    # Comentar en PR con el plan de Terraform
+    - name: Comment PR
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      env:
+        PLAN: ${{ steps.plan.outputs.stdout }}
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+          
+          <details><summary>Show Plan</summary>
+          
+          \`\`\`terraform\n
+          ${process.env.PLAN}
+          \`\`\`
+          
+          </details>
+          
+          *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
