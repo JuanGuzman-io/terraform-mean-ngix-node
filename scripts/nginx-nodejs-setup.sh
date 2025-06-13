@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script de configuración para servidor web
+# scripts/nginx-nodejs-setup.sh - Script de configuración para servidor web
 
 set -e
 
@@ -53,7 +53,7 @@ firewall-cmd --reload
 
 # Instalar Node.js y npm
 log "Instalando Node.js $NODEJS_VERSION..."
-curl -fsSL https://rpm.nodesource.com/setup_$NODEJS_VERSION.x | bash -
+curl -fsSL https://rpm.nodesource.com/setup_$${NODEJS_VERSION}.x | bash -
 dnf install -y nodejs
 
 # Verificar instalación de Node.js
@@ -99,7 +99,7 @@ cat >$APP_DIR/package.json <<'EOF'
 EOF
 
 # Crear servidor Express.js
-cat >$APP_DIR/server.js <<EOF
+cat >$APP_DIR/server.js <<SERVEREOF
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -121,7 +121,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
 // Conexión a MongoDB
-const MONGODB_URI = \`mongodb://$MONGODB_USERNAME:$MONGODB_PASSWORD@$MONGODB_PRIVATE_IP:27017/meanapp\`;
+const MONGODB_URI = 'mongodb://${mongodb_username}:${mongodb_password}@${mongodb_private_ip}:27017/meanapp';
 
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
@@ -160,10 +160,10 @@ app.get('/', (req, res) => {
         <h1 class="header">🚀 MEAN Stack Application</h1>
         <div class="status">
           <h2>✅ Aplicación funcionando correctamente</h2>
-          <p><strong>Proyecto:</strong> $PROJECT_NAME</p>
-          <p><strong>Ambiente:</strong> $ENVIRONMENT</p>
-          <p><strong>Node.js:</strong> \${process.version}</p>
-          <p><strong>MongoDB:</strong> Conectado a $MONGODB_PRIVATE_IP:27017</p>
+          <p><strong>Proyecto:</strong> ${project_name}</p>
+          <p><strong>Ambiente:</strong> ${environment}</p>
+          <p><strong>Node.js:</strong> $${process.version}</p>
+          <p><strong>MongoDB:</strong> Conectado a ${mongodb_private_ip}:27017</p>
         </div>
         <div class="endpoints">
           <h3>API Endpoints disponibles:</h3>
@@ -187,8 +187,8 @@ app.get('/api/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    project: '$PROJECT_NAME',
-    environment: '$ENVIRONMENT'
+    project: '${project_name}',
+    environment: '${environment}'
   });
 });
 
@@ -244,24 +244,24 @@ app.use((err, req, res, next) => {
 
 // Iniciar servidor
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(\`Servidor ejecutándose en puerto \${PORT}\`);
-  console.log(\`Ambiente: $ENVIRONMENT\`);
-  console.log(\`Proyecto: $PROJECT_NAME\`);
+  console.log(\`Servidor ejecutándose en puerto $${PORT}\`);
+  console.log(\`Ambiente: ${environment}\`);
+  console.log(\`Proyecto: ${project_name}\`);
 });
-EOF
+SERVEREOF
 
 # Crear archivo de configuración de ambiente
-cat >$APP_DIR/.env <<EOF
-NODE_ENV=$ENVIRONMENT
+cat >$APP_DIR/.env <<ENVEOF
+NODE_ENV=${environment}
 PORT=3000
-MONGODB_URI=mongodb://$MONGODB_USERNAME:$MONGODB_PASSWORD@$MONGODB_PRIVATE_IP:27017/meanapp
-PROJECT_NAME=$PROJECT_NAME
-ENVIRONMENT=$ENVIRONMENT
-EOF
+MONGODB_URI=mongodb://${mongodb_username}:${mongodb_password}@${mongodb_private_ip}:27017/meanapp
+PROJECT_NAME=${project_name}
+ENVIRONMENT=${environment}
+ENVEOF
 
 # Crear directorio public con archivo de ejemplo
 mkdir -p $APP_DIR/public
-cat >$APP_DIR/public/index.html <<'EOF'
+cat >$APP_DIR/public/index.html <<'HTMLEOF'
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -311,14 +311,14 @@ cat >$APP_DIR/public/index.html <<'EOF'
                 const response = await fetch('/api/health');
                 const data = await response.json();
                 document.getElementById('health-result').innerHTML = `
-                    <strong>Estado:</strong> ${data.status}<br>
-                    <strong>MongoDB:</strong> ${data.mongodb}<br>
-                    <strong>Timestamp:</strong> ${data.timestamp}<br>
-                    <strong>Proyecto:</strong> ${data.project}<br>
-                    <strong>Ambiente:</strong> ${data.environment}
+                    <strong>Estado:</strong> $${data.status}<br>
+                    <strong>MongoDB:</strong> $${data.mongodb}<br>
+                    <strong>Timestamp:</strong> $${data.timestamp}<br>
+                    <strong>Proyecto:</strong> $${data.project}<br>
+                    <strong>Ambiente:</strong> $${data.environment}
                 `;
             } catch (error) {
-                document.getElementById('health-result').innerHTML = `<strong>Error:</strong> ${error.message}`;
+                document.getElementById('health-result').innerHTML = `<strong>Error:</strong> $${error.message}`;
             }
         }
 
@@ -327,18 +327,18 @@ cat >$APP_DIR/public/index.html <<'EOF'
                 const response = await fetch('/api/items');
                 const items = await response.json();
                 document.getElementById('items-result').innerHTML = `
-                    <strong>Items (${items.length}):</strong><br>
-                    <pre>${JSON.stringify(items, null, 2)}</pre>
+                    <strong>Items ($${items.length}):</strong><br>
+                    <pre>$${JSON.stringify(items, null, 2)}</pre>
                 `;
             } catch (error) {
-                document.getElementById('items-result').innerHTML = `<strong>Error:</strong> ${error.message}`;
+                document.getElementById('items-result').innerHTML = `<strong>Error:</strong> $${error.message}`;
             }
         }
 
         async function createSampleItem() {
             const sampleItem = {
-                name: `Item de prueba ${Date.now()}`,
-                description: `Creado automáticamente el ${new Date().toLocaleString()}`
+                name: `Item de prueba $${Date.now()}`,
+                description: `Creado automáticamente el $${new Date().toLocaleString()}`
             };
             
             try {
@@ -350,10 +350,10 @@ cat >$APP_DIR/public/index.html <<'EOF'
                 const item = await response.json();
                 document.getElementById('items-result').innerHTML = `
                     <strong>Item creado:</strong><br>
-                    <pre>${JSON.stringify(item, null, 2)}</pre>
+                    <pre>$${JSON.stringify(item, null, 2)}</pre>
                 `;
             } catch (error) {
-                document.getElementById('items-result').innerHTML = `<strong>Error:</strong> ${error.message}`;
+                document.getElementById('items-result').innerHTML = `<strong>Error:</strong> $${error.message}`;
             }
         }
 
@@ -375,12 +375,12 @@ cat >$APP_DIR/public/index.html <<'EOF'
                 const item = await response.json();
                 document.getElementById('items-result').innerHTML = `
                     <strong>Item personalizado creado:</strong><br>
-                    <pre>${JSON.stringify(item, null, 2)}</pre>
+                    <pre>$${JSON.stringify(item, null, 2)}</pre>
                 `;
                 document.getElementById('item-name').value = '';
                 document.getElementById('item-description').value = '';
             } catch (error) {
-                document.getElementById('items-result').innerHTML = `<strong>Error:</strong> ${error.message}`;
+                document.getElementById('items-result').innerHTML = `<strong>Error:</strong> $${error.message}`;
             }
         }
 
@@ -389,7 +389,7 @@ cat >$APP_DIR/public/index.html <<'EOF'
     </script>
 </body>
 </html>
-EOF
+HTMLEOF
 
 # Cambiar propietario de archivos
 chown -R $APP_USER:$APP_USER $APP_DIR
@@ -401,7 +401,7 @@ sudo -u $APP_USER npm install
 
 # Configurar Nginx
 log "Configurando Nginx..."
-cat >/etc/nginx/conf.d/mean-app.conf <<'EOF'
+cat >/etc/nginx/conf.d/mean-app.conf <<'NGINXEOF'
 upstream nodejs_backend {
     server 127.0.0.1:3000;
 }
@@ -470,11 +470,11 @@ server {
         add_header Content-Type text/plain;
     }
 }
-EOF
+NGINXEOF
 
 # Crear servicio systemd para la aplicación Node.js
 log "Configurando servicio systemd..."
-cat >/etc/systemd/system/mean-app.service <<EOF
+cat >/etc/systemd/system/mean-app.service <<SYSTEMDEOF
 [Unit]
 Description=MEAN Stack Node.js Application
 Documentation=https://github.com/techops-solutions/mean-stack
@@ -484,7 +484,7 @@ After=network.target mongodb.service
 Type=simple
 User=$APP_USER
 WorkingDirectory=$APP_DIR
-Environment=NODE_ENV=$ENVIRONMENT
+Environment=NODE_ENV=${environment}
 Environment=PORT=3000
 ExecStart=/usr/bin/node server.js
 Restart=on-failure
@@ -501,10 +501,10 @@ ReadWritePaths=$APP_DIR
 
 [Install]
 WantedBy=multi-user.target
-EOF
+SYSTEMDEOF
 
 # Configurar logrotate para los logs de la aplicación
-cat >/etc/logrotate.d/mean-app <<'EOF'
+cat >/etc/logrotate.d/mean-app <<'LOGEOF'
 /var/log/mean-stack-setup.log
 /var/log/nginx/mean-app-*.log {
     daily
@@ -520,11 +520,11 @@ cat >/etc/logrotate.d/mean-app <<'EOF'
         fi
     endscript
 }
-EOF
+LOGEOF
 
 # Configurar CloudWatch Agent
 log "Configurando CloudWatch Agent..."
-cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
+cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<'CWEOF'
 {
     "agent": {
         "metrics_collection_interval": 60,
@@ -536,17 +536,17 @@ cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
                 "collect_list": [
                     {
                         "file_path": "/var/log/mean-stack-setup.log",
-                        "log_group_name": "/aws/ec2/$PROJECT_NAME-$ENVIRONMENT-web-server",
+                        "log_group_name": "/aws/ec2/${project_name}-${environment}-web-server",
                         "log_stream_name": "{instance_id}/setup.log"
                     },
                     {
                         "file_path": "/var/log/nginx/access.log",
-                        "log_group_name": "/aws/ec2/$PROJECT_NAME-$ENVIRONMENT-web-server",
+                        "log_group_name": "/aws/ec2/${project_name}-${environment}-web-server",
                         "log_stream_name": "{instance_id}/nginx-access.log"
                     },
                     {
                         "file_path": "/var/log/nginx/error.log",
-                        "log_group_name": "/aws/ec2/$PROJECT_NAME-$ENVIRONMENT-web-server",
+                        "log_group_name": "/aws/ec2/${project_name}-${environment}-web-server",
                         "log_stream_name": "{instance_id}/nginx-error.log"
                     }
                 ]
@@ -592,7 +592,7 @@ cat >/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<EOF
         }
     }
 }
-EOF
+CWEOF
 
 # Habilitar y iniciar servicios
 log "Habilitando y iniciando servicios..."
@@ -619,7 +619,7 @@ log "  CloudWatch Agent: $cloudwatch_status"
 
 # Verificar conectividad a MongoDB
 log "Verificando conectividad a MongoDB..."
-timeout 10 bash -c "cat < /dev/null > /dev/tcp/$MONGODB_PRIVATE_IP/27017" && log "✅ MongoDB accesible" || log "❌ MongoDB no accesible"
+timeout 10 bash -c "cat < /dev/null > /dev/tcp/${mongodb_private_ip}/27017" && log "✅ MongoDB accesible" || log "❌ MongoDB no accesible"
 
 # Verificar aplicación local
 log "Verificando aplicación local..."
